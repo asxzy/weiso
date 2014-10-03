@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}About{% endblock %}
+
+{% block content %}
+<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?skin=sunburst"></script>
+
+	<div class="well">
+		<h2>OverView</h2>
+        <p>Our project divides into two main parts:<br/>
+
+        A HTML search engine for Uwindsor:<br/>
+
+        We build a simple search engine for HTML pages under the domain of uwindsor.ca. Meanwhile, we saved the links as a graph so that we are able to find out the structure and applied PageRank algorithm on it.<br/>
+
+        A similarity search engine for Sina Weibo:<br/>
+
+        We build a similarity search engine for Sina Weibo, which is the most popular twitter-like website in China. By using our search engine, users are able to find the similarity between the users in Sina Weibo.</p>
+        <h2>Search Engine for UWindsor</h2>
+        <h3>Crawler</h3>
+        <p>We wrote a sample crawler to collect the HTML pages from Uwindsor website. The crawler will save the page into a file, then parse the page and get all the outlinks in this page. When get the urls, the program will normalize the url.<br/>
+<pre class="prettyprint">
+def crawler(url):
+    urls = []
+    try:
+        req = urllib.urlopen(url)
+    except:
+        print "error: ",url
+        return urls
+
+    if req.headers.gettype() != 'text/html':
+        return urls
+    page = req.read()
+    filename = hashlib.md5(url).hexdigest()
+    output = open('crawler/'+filename,'w')
+    output.write(page)
+    output.close()
+
+    soup = BeautifulSoup(page)
+    for u in soup.find_all('a'):
+        urls.append(u.get('href'))
+
+    def normalize(url,u):
+        try:
+            if "http://" not in str(u) and "https://" not in str(u):
+                u = urlparse.urljoin(url,u)
+        except:
+            u = ''
+        return u
+    return [normalize(url,u) for u in urls]
+</pre>
+After that, the programm will verify the url to make sure the url is compelete and under the domain of uwindsor.ca
+
+Finally, all the un-crawled urls will be put back into a stack and the crawler will get a new url from the stack and repeat the progress above until the stack is empty or the crawled pages out of limit.<br/>
+<pre class="prettyprint">
+queue = Queue()
+bucket = Set()
+g = graph_tool.Graph()
+nodes = {}
+name = g.new_vertex_property("string")
+
+if __name__ == "__main__":
+    seed = "http://www.uwindsor.ca/"
+    queue.put(seed)
+    bucket.add(seed)
+
+    while not queue.empty() and count < int(sys.argv[1]):
+        url = queue.get()
+        bucket.add(url)
+        urls = crawler(url)
+        if len(urls) == 0: 
+            continue       
+        for u in urls:     
+            try:           
+                source = nodes[url]          
+            except:        
+                source = g.add_vertex()      
+                nodes[url] = source          
+                name[source] = url           
+            try:           
+                target = nodes[u]            
+            except:        
+                target = g.add_vertex()
+                nodes[u] = target
+                name[target] = u             
+            g.add_edge(source,target)        
+        urls = verifyUrls(urls)              
+        for u in urls:     
+            if u in bucket:
+                continue   
+            queue.put(u)   
+        if len(urls) == 0: 
+            continue
+    print "save graph"
+    g.vertex_properties['name'] = name
+    g.save(sys.argv[1]+'.gml')
+</pre>
+        
+        In our expriment, we crawled 5,000 pages under the domain of uwindsor.ca. When process the crawler, we saved the relation between the pages. The following figure shows the structure for uwindsor website based on 3,604 pages and 18,883 urls.<br/></p>
+        <img src="/static/crawler.png"/>
+        <h3>PageRank</h3>
+        <p>We apply the PageRank algorithm on the graph generated from the crawler. The beta we use is 0.85.</p>
+<pre class="prettyprint">
+def pagerank(G, s = .85, maxerr = .001):
+    n = G.shape[0]
+    M = csc_matrix(G,dtype=numpy.float)
+    rsums = numpy.array(M.sum(1))[:,0]
+    ri, ci = M.nonzero()
+    M.data /= rsums[ri]
+    sink = rsums==0
+    ro, r = numpy.zeros(n), numpy.ones(n)
+    while numpy.sum(numpy.abs(r-ro)) > maxerr:
+        ro = r.copy()
+        for i in xrange(0,n):
+            Ii = numpy.array(M[:,i].todense())[:,0]
+            Si = sink / float(n)
+            Ti = numpy.ones(n) / float(n)
+            r[i] = ro.dot( Ii*s + Si*s + Ti*(1-s) )
+    return r/sum(r)
+</pre>
+        <p>The following table shows the top-10 ranking pages under the domain uwindsor.ca.</p>
+        <table class="table">
+            <tr><td>pagerank</td><td>URL</td></tr>
+            <tr><td>0.01667770623710</td><td>http://www.uwindsor.ca/event</td></tr>
+            <tr><td>0.00793752765894</td><td>http://www.uwindsor.ca/graduate/graduate-programs-directory</td></tr>
+            <tr><td>0.00771297419119</td><td>http://www.uwindsor.ca/student-support</td></tr>
+            <tr><td>0.00701950209944</td><td>http://www.uwindsor.ca/10558/our-programs-study</td></tr>
+            <tr><td>0.00623725289188</td><td>http://www.uwindsor.ca/awards</td></tr>
+            <tr><td>0.00622305840030</td><td>http://www.uwindsor.ca/graduate</td></tr>
+            <tr><td>0.00610371657088</td><td>http://www.uwindsor.ca/logo/50th-anniversary-brand</td></tr>
+            <tr><td>0.00609437229787</td><td>http://www.uwindsor.ca/future-students/program-profile-listing</td></tr>
+            <tr><td>0.00607188506925</td><td>http://www.uwindsor.ca/law</td></tr>
+            <tr><td>0.00596817099704</td><td>http://leddy.uwindsor.ca/</td></tr>
+        </table>
+        <h3>Index</h3>
+        <p>We use PyLucene with the StandardAnalyzer, a Python version of Lucene API, to make the Index for the crawled pages.</p>
+<pre class="prettyprint">
+#!/usr/bin/env python
+import os,sys,glob
+import lucene
+from java.io import File
+from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
+from org.apache.lucene.analysis.standard import StandardAnalyzer
+from org.apache.lucene.document import Document, Field, FieldType
+from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
+from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.util import Version
+
+def luceneIndexer(docdir,indir):
+    lucene.initVM()
+    DIRTOINDEX = docdir
+    INDEXIDR = indir
+    indexdir = SimpleFSDirectory(File(INDEXIDR))
+    analyzer = StandardAnalyzer(Version.LUCENE_30)
+    config = IndexWriterConfig(Version.LUCENE_CURRENT, analyzer)
+    config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+    index_writer = IndexWriter(indexdir, config)
+    for tfile in glob.glob(os.path.join(DIRTOINDEX,'*')):
+        print "Indexing: ", tfile
+        document = Document()
+        content = open(tfile,'r').read()
+        document.add(Field("text",content,Field.Store.YES,Field.Index.ANALYZED))
+        index_writer.addDocument(document)
+        print "Done: ", tfile
+    print index_writer.numDocs()
+    index_writer.close()
+if __name__ == '__main__':
+    luceneIndexer(sys.argv[1],sys.argv[2])
+</pre>
+        <img src="/static/lucene-index.png"/><hr/>
+<pre class="prettyprint">
+#!/usr/bin/env python
+import sys, os, lucene
+from java.io import File
+from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
+from org.apache.lucene.index import DirectoryReader
+from org.apache.lucene.queryparser.classic import QueryParser
+from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.util import Version
+def run(searcher, analyzer):
+    while True:
+        print
+        print "Hit enter with no input to quit."
+        command = raw_input("Query:")
+        if command == '':
+            return
+        print
+        print "Searching for:", command
+        query = QueryParser(Version.LUCENE_CURRENT, "text",
+                            analyzer).parse(command)
+        scoreDocs = searcher.search(query, 10000).scoreDocs
+        print "%s total matching documents." % len(scoreDocs)
+
+if __name__ == '__main__':
+    lucene.initVM(vmargs=['-Djava.awt.headless=true'])
+    print 'lucene', lucene.VERSION
+    directory = SimpleFSDirectory(File(sys.argv[1]))
+    searcher = IndexSearcher(DirectoryReader.open(directory))
+    analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
+    run(searcher, analyzer)
+</pre>
+        <img src="/static/lucene-search.png"/>
+        <h2>Similarity Search Engine for Sina Weibo</h2>
+        <h3>Datasets</h3>
+        <p>The data we use is a set of raw data, which has 1,185,072 records, encoded by json. However, the raw data has some abnormal records which need to be cleaned before we use it. So we write a cleaner program to correct the abnormal records and transform the raw data into a directed unweight graph and saved in a MySQL server. In the directed graph, the node is a user of Sina Weibo and the out-link neighbor is the user's following. The graph is generated by star sampling, which has 11,926,957 nodes and 38,055,283 edges. </p>
+        <h3>Similarity Checking</h3>
+        <p>When calculate the similarity, we focus on the following problem:<br/>
+        1. The graph is too big for a laptop to load and compute.<br/>
+        2. Pair-wised similarity check is slow.<br/>
+        To solve these problems, we decide to store the graph into a MySQL server, then using LSH and MinHash to calculate the similarity. In such way, we are able to calculate the pair-wised similarity in a very short time.</p>
+        <h4>MinHash and evaluation</h4>
+        <p>For each node, we apply 64 bits MD5 on the nodes' in-neighbors. For each salt, select the k-MinHash to represent this node. Then calculate the pair-wised the Jaccard Similarity.<br/>
+<pre class="prettyprint">
+def minhash(neighbors,salt,k=400):
+    hashs = []
+    for n in neighbors:
+        hashs.append(int(hashlib.md5(str(n)+str(salt)).hexdigest()[8:-8],16))
+    return heapq.nsmallest(k,hashs)
+
+def jaccard(s1,s2):
+    salt = numpy.random.randint(99999)
+    m1 = minhash(s1,salt)
+    m2 = minhash(s2,salt)
+    MS = {}.fromkeys(m1+m2).keys()
+    n = len(m1)+len(m2)-len(MS)
+    try:
+        ms = n / float(len(m1) + len(m2) - n)
+    except ZeroDivisionError:
+        ms = 0
+    return ms
+</pre>
+        The following figure shows the bias and variance of the minhash similarity<br/>
+        </p>
+        <img src="/static/bv.png" />
+        <h3>Index and search</h3>
+        <p>We use PyLucene to make the Index. As the node information is Chinese character, we use SmartChineseAnalyzer to analyzer the token. To provide a friendly user interface, we use django to build a website. Django can call the function of Pylucene so that the user can simply use the UI to query the similarity of one or some people.<br/></p>
+<pre class="prettyprint">
+#!/usr/bin/env python
+import os, re, sys, lucene
+import MySQLdb
+from subprocess import *
+from time import *
+
+from java.io import File
+from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
+from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig
+from org.apache.lucene.document import Document, Field, StringField, TextField
+from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.util import Version
+
+db = MySQLdb.connect('localhost', 'asxzy', 'asxzy', 'weibo',charset='utf8')
+
+# init lucene
+INDEX_DIR = 'index'
+lucene.initVM(vmargs=['-Djava.awt.headless=true'])
+directory = SimpleFSDirectory(File(INDEX_DIR))
+analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
+analyzer = LimitTokenCountAnalyzer(analyzer, 99999999999)
+config = IndexWriterConfig(Version.LUCENE_CURRENT, analyzer)
+writer = IndexWriter(directory, config)
+cur = db.cursor()
+sql = "SELECT `nid`, `screen_name`, `description` FROM `node` WHERE `screen_name` IS NOT NULL"
+cur.execute(sql)
+for node in cur.fetchall():
+    doc = Document()
+    string = ''
+    if node[1] != '':
+        string += node[1] + ' '
+    try:
+        if node[2] != '':
+            string += node[2]
+    except:
+        string += ''
+    doc.add(Field("text", string , TextField.TYPE_NOT_STORED))
+    doc.add(Field("id", str(node[0]), StringField.TYPE_STORED))
+    writer.addDocument(doc)
+writer.commit()
+writer.close()
+</pre>
+	</div>
+{% endblock %}
+
+{% block script%}
+<script type="text/javascript">
+	$(document).ready(function(){
+		setCurrentNav(2);
+	});
+</script>
+{% endblock %}

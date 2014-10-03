@@ -1,0 +1,15 @@
+footer{
+	text-align: center;
+}
+
+.page{
+	margin-top: 48px;
+}
+
+.short-blog .short-footer{
+	margin-top: 10px;
+}
+
+.short-blog .short-footer small{
+	color: #08c;
+}

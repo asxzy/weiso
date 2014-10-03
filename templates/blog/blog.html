@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{blog.title}}{% endblock %}
+
+{% block content %}
+	<div class="short-blog well">
+		<h2>{{blog.title}}</h2>
+		<div class="short-describe">
+			{{blog.short_describe}}
+		</div>
+		<div class="short-footer">
+			<small>{{blog.author}}</small>
+			<small class="pull-right">{{blog.date}}</small>
+		</div>
+	</div>
+{% endblock %}
+
+{% block script%}
+<script type="text/javascript">
+	$(document).ready(function(){
+		setCurrentNav(1);
+	});
+</script>
+{% endblock %}

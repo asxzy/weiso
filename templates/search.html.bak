@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Search result{% endblock %}
+
+{% block content %}
+	<div class="well">
+
+		<table class="table table-striped table-bordered">
+			<thead>
+				<tr>
+					<td style="min-width:100px;">name</td>
+					<td>description</td>
+					<td style="min-width:250px;">jaccard similarity</td>
+					<td style="min-width:250px;">minhash similarity</td>
+				</tr>
+			</thead>
+
+			<tbody>
+				{% for n in nodes %}
+					<tr>
+                        <td><a href="/view_node/{{n.node_id}}">{% if n.screen_name == None %}User_{{n.node_id}}{% else %}{{n.screen_name}}{% endif %}</a><br/>in degree:{{n.in_degree}}<br/>out degree:{{n.out_degree|default:0}}</td>
+						<td>{{n.description}}</td>
+                        <td>{% for js in n.getms %}
+                            <a href="/view_node/{{js.2}}">{{js.1}}</a> : {{js.3}}<br/>
+                            {% endfor %}
+                        </td>
+                        <td>{% for ms in n.getms %}
+                            <a href="/view_node/{{ms.2}}">{{ms.1}}</a> : {{ms.3}}<br/>
+                            {% endfor %}
+                        </td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+
+	</div>
+{% endblock %}
+
+{% block script%}
+<script type="text/javascript">
+	$(document).ready(function(){
+		setCurrentNav(0);
+	});
+</script>
+{% endblock %}

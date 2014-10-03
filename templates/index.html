@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Weiso{% endblock %}
+
+{% block content %}
+	<div style="width:500px;margin:200px auto;">
+		{% load static %}
+		<form action="search" class="form-search" style="margin-top:20px;">
+			<input type="text" name="q" class="input-medium search-query" style="width:380px; margin-right:18px;">
+			<button type="submit" class="btn">Search</button>
+		</form>
+        <center><a href="./search?q=李开复">李开复</a> | <a href="./search?q=姚晨">姚晨</a> | <a href="./search?q=新浪">新浪</a> | <a href="./search?q=爱约会">爱约会</a> | <a href="./search?q=文玩天下">文玩天下</a></center>
+	</div>
+{% endblock %}
+
+{% block script%}
+<script type="text/javascript">
+	$(document).ready(function(){
+		setCurrentNav(0);
+	});
+</script>
+{% endblock %}

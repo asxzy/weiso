@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Search result{% endblock %}
+
+{% block content %}
+	<div class="well">
+
+		<table class="table table-striped table-bordered">
+			<thead>
+				<tr>
+					<td style="min-width:100px;">name</td>
+					<td>description</td>
+					<td style="min-width:250px;">similarity</td>
+				</tr>
+			</thead>
+
+			<tbody>
+				{% for n in nodes %}
+					<tr>
+                        <td><a href="./view_node-{{n.node_id}}">{% if n.screen_name == None %}User_{{n.node_id}}{% else %}{{n.screen_name}}{% endif %}</a><br/>in degree:{{n.in_degree}}<br/>out degree:{{n.out_degree|default:0}}<br/>Spammed Index:{{n.SpammedIndex|default:0}}<br/>Normalized Spammed Index:{{n.NormalizedSpammedIndex|default:0}}<br/>Spammer Index:{{n.SpammerIndex|default:0}}<br/><a href="http://weibo.com/u/{{n.node_id}}">view in weibo</a></td>
+						<td>{{n.description}}</td>
+                        <td>{% for ms in n.js %}
+                            <a href="./view_node-{{ms.0}}">{{ms.1}}</a> : {{ms.2}}<br/>
+                            {% endfor %}
+                        </td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+        <div style="text-align:center">
+            Found {{count}}<br/>
+            {% if page.has_pre != None%}<a href="{{request.path}}?q={{q}}&page={{page.has_pre}}">previous</a> | {% endif %}
+              {{page.page}}
+            {% if page.has_next != None %} | <a href="{{request.path}}?q={{q}}&page={{page.has_next}}">next</a>{% endif %}
+        </div>
+
+	</div>
+{% endblock %}
+
+{% block script%}
+<script type="text/javascript">
+	$(document).ready(function(){
+		setCurrentNav(0);
+	});
+</script>
+{% endblock %}
