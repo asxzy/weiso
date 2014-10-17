@@ -22,18 +22,6 @@ CACHES = {
 
 CACHE_MIDDLEWARE_SECONDS = None
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        'NAME': os.path.join(ROOT_DIR, 'sqlite.db'),
-        "USER": "asxzy",
-        "PASSWORD": "asxzy",
-        "HOST": "",
-        "PORT": "",
-        "CONN" : None,
-        }
-    }
-
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
