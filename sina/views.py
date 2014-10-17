@@ -5,7 +5,9 @@ from django.conf import settings
 from django.http import Http404
 from similarity import *
 
-import sys, os, lucene, math
+import sys, os
+sys.path.append("/usr/local/lib/python2.7/site-packages")
+import lucene, math
 import time
 
 from java.io import File
