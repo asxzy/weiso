@@ -18,7 +18,5 @@
     </array>
     <key>WorkingDirectory</key>
     <string>/data/weiso</string>
-    <key>UserName</key>
-    <string>_www</string>
   </dict>
 </plist>
