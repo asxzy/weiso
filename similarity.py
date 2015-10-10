@@ -4,37 +4,47 @@ import hashlib
 import heapq
 import random
 import io
-from pymongo import ReplicaSetConnection
-from pymongo import ReadPreference
 from pymongo import MongoClient
 
 def hash():
-    conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+    #conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+    conn = MongoClient('localhost')
     db = conn.sina
+    CACHE = db.cache
+    #CACHE.drop()
     #db.read_preference = ReadPreference.SECONDARY
     nodes = {}
     #with io.open("/Users/asxzy/datasets/weibo.celebrity",encoding="utf-8") as f:
-    with io.open("/root/weibo.celebrity",encoding="utf-8") as f:
+    with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.celebrity",encoding="utf-8") as f:
         for line in f:
             nodes[int(line.split()[0])] = True
-    #with io.open("/Users/asxzy/datasets/weibo.10000",encoding="utf-8") as f:
-    with io.open("/root/weibo.10000",encoding="utf-8") as f:
+    ##with io.open("/Users/asxzy/datasets/weibo.10000",encoding="utf-8") as f:
+    with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.10000",encoding="utf-8") as f:
         next(f)
         for line in f:
             nodes[int(line.split()[0])] = True
     count = 0
-    for node in nodes:
-        similarity(node)
+    for node in sorted(nodes.keys()):
+        similarity(node,True)
         count += 1
         print count,len(nodes)
 
 
 
 def similarity(query_node,topk = False):
-    conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+    #conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+    conn = MongoClient('localhost')
     db = conn.sina
     #db.read_preference = ReadPreference.SECONDARY
     CACHE = db.cache
+    res = CACHE.find_one({'node_id':query_node})
+    if res != None:
+        print query_node,"cache found"
+        if topk != False and type(topk) == int:
+            return res['cache'][:topk]
+        else:
+            return res['cache']
+
     def buildhash(nid,k=400):
         hashs = []
         cur = db.edges.find({"to":nid})
@@ -55,9 +65,10 @@ def similarity(query_node,topk = False):
     if topk != False and type(topk) == int:
         res = CACHE.find_one({"node_id":query_node})
         if res != None:
-            print "found cache of",query_node
+            print query_node,"found cache of",query_node
             return res["cache"][:topk]
-            print "cache not found, trying top10k"
+        else:
+            print query_node,"cache not found, trying top10k"
     JS = db.js
     NODES = db.nodes
     js = []
@@ -76,7 +87,7 @@ def similarity(query_node,topk = False):
             node["screen_name"] = "User_"+str(record["n2"])
         js.append((node["node_id"],node["screen_name"],record["js"]))
     if len(js) > 0:
-        print "found in top 10k"
+        print query_node,"found in top 10k"
         js.sort(key=lambda x : -x[2])
         record = {}
         record["node_id"] = query_node
@@ -86,7 +97,7 @@ def similarity(query_node,topk = False):
             return js[:topk]
         else:
             return js
-    print "top10k not found"
+    print query_node,"top10k not found"
 
     EDGES = db.edges
     HASHS = db.hashs
@@ -113,15 +124,20 @@ def similarity(query_node,topk = False):
     else:
         for n in NODES.find({"node_id":{"$in":similar}}):
             node = {}
-            node["node_id"] = n["node_id"]
-            node["in_degree"] = n["in_degree"]
-            node["out_degree"] = n["out_degree"]
+            try:
+                node["node_id"] = n["node_id"]
+                node["in_degree"] = n["in_degree"]
+                node["out_degree"] = n["out_degree"]
+            except KeyError:
+                print n
+                print query_node,n['node_id'],'key error'
+                sys.exit()
             try:
                 node["screen_name"] = n["screen_name"]
             except:
                 node["screen_name"] = "User_"+str(node["node_id"])
             nodes.append(node)
-    print "there are ",len(nodes),"nodes"
+    print query_node,"there are ",len(nodes),"nodes"
     res_ms = []
     try:
         m1 = HASHS.find_one({"node_id":query_node},{"hash":1})["hash"]

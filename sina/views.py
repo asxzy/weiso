@@ -18,8 +18,7 @@ from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 
-from pymongo import ReplicaSetConnection
-from pymongo import ReadPreference
+from pymongo import MongoClient
 
 
 
@@ -48,7 +47,8 @@ def search(request):
         nodes = []
         keywords = []
     else:
-        conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+        #conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+        conn = MongoClient('localhost')
         db = conn.sina
         #db.read_preference = ReadPreference.SECONDARY
         CACHE = db.cache
@@ -121,7 +121,8 @@ def view_node(request, node_id):
     node_id = int(node_id)
     usage = {}
     usage["time"] = time.time()
-    conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+    #conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+    conn = MongoClient('localhost')
     db = conn.sina
     #db.read_preference = ReadPreference.SECONDARY
     CACHE = db.cache

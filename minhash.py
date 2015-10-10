@@ -155,7 +155,8 @@ if __name__ == "__main__":
     conn = pymongo.MongoClient("/tmp/mongodb-27017.sock")
     db = conn.sina
     nodes = []
-    with io.open("/Users/asxzy/datasets/weibo.nodelist") as f:
+    #with io.open("/Users/asxzy/datasets/weibo.nodelist") as f:
+    with io.open(sys.argv[1]) as f:
         for line in f:
             nodes.append(int(line.split()[0]))
     count = 0
