@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pypy
 import sys
 import hashlib
 import heapq
@@ -7,6 +7,7 @@ import io
 from pymongo import MongoClient
 
 def hash():
+    count = 0
     #conn = ReplicaSetConnection('localhost', replicaSet='jlu')
     conn = MongoClient('localhost')
     db = conn.sina
@@ -14,20 +15,29 @@ def hash():
     #CACHE.drop()
     #db.read_preference = ReadPreference.SECONDARY
     nodes = {}
-    #with io.open("/Users/asxzy/datasets/weibo.celebrity",encoding="utf-8") as f:
-    with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.celebrity",encoding="utf-8") as f:
-        for line in f:
-            nodes[int(line.split()[0])] = True
     ##with io.open("/Users/asxzy/datasets/weibo.10000",encoding="utf-8") as f:
     with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.10000",encoding="utf-8") as f:
         next(f)
         for line in f:
             nodes[int(line.split()[0])] = True
-    count = 0
+
+
+
+    #for node in sorted(nodes.keys()):
+    #    similarity(node,True)
+    #    count += 1
+    #    print count,len(nodes)
+
+    nodes = {}
+    with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.celebrity",encoding="utf-8") as f:
+        for line in f:
+            nodes[int(line.split()[0])] = True
     for node in sorted(nodes.keys()):
         similarity(node,True)
         count += 1
         print count,len(nodes)
+
+
 
 
 
@@ -129,7 +139,10 @@ def similarity(query_node,topk = False):
                 node["in_degree"] = n["in_degree"]
                 node["out_degree"] = n["out_degree"]
             except KeyError:
-                print n
+                print "node",n
+                print "node id",n["node_id"]
+                print "in_degree", n["in_degree"]
+                print "out_degree", n["out_degree"]
                 print query_node,n['node_id'],'key error'
                 sys.exit()
             try:

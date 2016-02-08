@@ -1,25 +1,25 @@
-#!/usr/bin/env python
+#!/usr/bin/env pypy
 import sys
 import hashlib
 import heapq
 import random
 import io
-from pymongo import ReplicaSetConnection
-from pymongo import ReadPreference
+#from pymongo import ReplicaSetConnection
+#from pymongo import ReadPreference
 from pymongo import MongoClient
 import pymongo
 
-conn = ReplicaSetConnection('localhost', replicaSet='jlu')
+conn = MongoClient('localhost', replicaSet='jlu')
 db = conn.sina
 #db.read_preference = ReadPreference.SECONDARY
 
 def hash():
     nodes = {}
-    with io.open("/Users/asxzy/datasets/weibo.celebrity",encoding="utf-8") as f:
+    with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.celebrity",encoding="utf-8") as f:
         for line in f:
             nodes[int(line.split()[0])] = True
 #    nodes = {}
-    with io.open("/Users/asxzy/datasets/weibo.10000",encoding="utf-8") as f:
+    with io.open("/Volumes/Data/asxzy/datasets/weibo/weibo.10000",encoding="utf-8") as f:
         next(f)
         for line in f:
             nodes[int(line.split()[0])] = True
