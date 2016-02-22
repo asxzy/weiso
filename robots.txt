@@ -1,16 +1,2 @@
-User-agent: msnbot
-Crawl-delay: 10
-user-agent: AhrefsBot
-disallow: /
-User-agent: MJ12bot
-Disallow: /
-User-agent: dotbot
-Disallow: /
-User-agent: 360Spider
-Disallow: /
-User-agent: HaoSouSpider
-Disallow: /
-User-agent: 360Spider-Image
-Disallow: /
-User-agent: 360Spider-Video
+User-agent: *
 Disallow: /
